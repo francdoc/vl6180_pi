@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "stat.h": "c",
+        "vl6180_pi.h": "c",
+        "i2c-dev.h": "c",
+        "time.h": "c"
+    }
+}

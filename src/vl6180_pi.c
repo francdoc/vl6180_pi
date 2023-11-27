@@ -6,20 +6,20 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <time.h>
 
-
-
+// Split 16-bit register address into two bytes and write required register address to VL6180 and read the data back
 int read_byte(vl6180 handle, int reg){
     char data_write[2];
     char data_read[1];
     data_write[0] = (reg >> 8) & 0xFF; // MSB of register address
     data_write[1] = reg & 0xFF; // LSB of register address
-
     write(handle, data_write, 2);
     read(handle, data_read, 1);
     return data_read[0];
 }
 
+// Split 16-bit register address into two bytes and write the address + data via I²C
 void write_byte(vl6180 handle, int reg,char data) {
     char data_write[3];
     data_write[0] = (reg >> 8) & 0xFF;; // MSB of register address
@@ -132,13 +132,13 @@ vl6180 vl6180_initialise_address(int device, int addr){
         write_byte(handle,0x010a, 0x30); // Set the averaging sample period (compromise between lower noise and increased execution time)
         write_byte(handle,0x003f, 0x46); // Sets the light and dark gain (upper nibble). Dark gain should not be changed.
         write_byte(handle,0x0031, 0xFF); // sets the # of range measurements after which auto calibration of system is performed
-        write_byte(handle,0x0040, 0x63); // Set ALS integration time to 100ms
+        write_byte(handle,0x0041, 0x63); // Set ALS integration time to 100ms
         write_byte(handle,0x002e, 0x01); // perform a single temperature calibratio of the ranging sensor
         write_byte(handle,0x001b, 0x09); // Set default ranging inter-measurement period to 100ms
         write_byte(handle,0x003e, 0x31); // Set default ALS inter-measurement period to 500ms
         write_byte(handle,0x0014, 0x24); // Configures interrupt on ‘New Sample Ready threshold event’ 
 
-        write_byte(handle,0x016, 0x00);
+        write_byte(handle,0x016, 0x00); // FRESH_OUT_OF_RESET; init
     }
 
     set_scaling(handle,1);
@@ -152,13 +152,33 @@ void vl6180_change_addr(vl6180 handle, int newAddr)
     ioctl(handle, I2C_SLAVE, newAddr);
 }
 
-int get_distance(vl6180 handle){
+// Start a range measurement in single shot mode
+int VL6180_Start_Range(vl6180 handle) {
+    write_byte(handle, 0x018,0x01);
+    return 0;
+}
 
+// Read range result (mm)
+int get_distance(vl6180 handle){
     int range;
     start_range(handle);
     poll_range(handle);
-
-    range=read_byte(handle,0x063);
+    range=read_byte(handle,0x062);
     clear_interrupts(handle);
     return range;
+}
+
+// poll for new sample ready ready
+int VL6180_Poll_Range(vl6180 handle) {
+    char status;
+    char range_status;
+    // check the status
+    status = read_byte(handle, 0x04f);
+    range_status = status & 0x07;
+    // wait for new measurement ready status
+    while (range_status != 0x04) {
+    status = read_byte(handle, 0x04f);
+    range_status = status & 0x07;
+    return 0;
+    }
 }
