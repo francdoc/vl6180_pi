@@ -174,9 +174,9 @@ int VL6180_Poll_Range(vl6180 handle) {
     char range_status;
     // check the status
     status = read_byte(handle, 0x04f);
-    range_status = status & 0x07;
+    range_status = status & 0x07; // the line range_status = status & 0x07; is using a bitwise AND operation (&) to extract the lower 3 bits of the status byte and store the result in the range_status variable.
     // wait for new measurement ready status
-    while (range_status != 0x04) {
+    while (range_status != 0x04) { // 0x04 = 00000100
         status = read_byte(handle, 0x04f);
         range_status = status & 0x07;
     }
