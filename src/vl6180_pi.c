@@ -177,8 +177,8 @@ int VL6180_Poll_Range(vl6180 handle) {
     range_status = status & 0x07;
     // wait for new measurement ready status
     while (range_status != 0x04) {
-    status = read_byte(handle, 0x04f);
-    range_status = status & 0x07;
-    return 0;
+        status = read_byte(handle, 0x04f);
+        range_status = status & 0x07;
     }
+    return 0;
 }
